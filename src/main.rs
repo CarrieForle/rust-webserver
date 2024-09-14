@@ -5,6 +5,8 @@ use std::{
     fs,
     io::{prelude::*, BufReader},
     net::{TcpListener, TcpStream},
+    thread,
+    time::Duration,
 };
 
 use webserver::ThreadPool;
@@ -34,11 +36,13 @@ fn handle_connection(mut stream: TcpStream) {
     //     .collect();
     let request_line = buf_reader.lines().next().unwrap().unwrap();
 
-    let (status_line, filename) = if request_line == "GET / HTTP/1.1" {
-        ("HTTP/1.1 200 OK", "hello.html")
-    }
-    else {
-        ("HTTP/1.1 404 Not Found", "404.html")
+    let (status_line, filename) = match &request_line[..] {
+        "GET / HTTP/1.1" => ("HTTP/1.1 200 OK", "hello.html"),
+        "GET /sleep HTTP/1.1" => {
+            thread::sleep(Duration::from_secs(5));
+            ("HTTP/1.1 200 OK", "sleep.html")
+        }
+        _ => ("HTTP/1.1 404 Not Found", "404.html"),
     };
     
     let contents = fs::read_to_string(filename).unwrap();
