@@ -3,7 +3,7 @@ use std::thread;
 pub struct PoolCreationError;
 
 pub struct ThreadPool {
-    threads: Vec<thread::JoinHandle<()>>,
+    threads: Vec<Worker>,
 }
 
 impl ThreadPool {
@@ -19,19 +19,33 @@ impl ThreadPool {
         {
             return Err(PoolCreationError);
         }
-
+        
         let mut threads = Vec::with_capacity(size);
-
-        for _ in 0..size {
-            /* create some threads and store them in the vector */
+        
+        for id in 0..size {
+            threads.push(Worker::new(id));
         }
-
+        
         Ok(ThreadPool { threads })
     }
-
+    
     pub fn execute<F>(&self, f: F) 
-        where F: FnOnce() + Send + 'static 
+    where F: FnOnce() + Send + 'static 
     {
+        
+    }
+}
 
+struct Worker {
+    id: usize,
+    job: thread::JoinHandle<()>,
+}
+
+impl Worker {
+    fn new(id: usize) -> Worker {
+        Worker { 
+            id, 
+            job: thread::spawn(|| {}),
+        }
     }
 }
