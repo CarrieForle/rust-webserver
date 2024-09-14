@@ -10,7 +10,7 @@ pub struct PoolCreationError;
 
 pub struct ThreadPool {
     workers: Vec<Worker>,
-    sender: mpsc::Sender<Job>,
+    sender: Option<mpsc::Sender<Job>>,
 }
 
 impl ThreadPool {
@@ -28,6 +28,7 @@ impl ThreadPool {
         }
 
         let (sender, receiver) = mpsc::channel();
+        let sender = Some(sender);
         let receiver = Arc::new(Mutex::new(receiver));
         
         let mut workers = Vec::with_capacity(size);
@@ -44,30 +45,51 @@ impl ThreadPool {
     {
         let job = Box::new(f);
 
-        self.sender.send(job).unwrap();
+        self.sender.as_ref().unwrap().send(job).expect("Failed to send job down the queue");
+    }
+}
+
+impl Drop for ThreadPool {
+    fn drop(&mut self) {
+        drop(self.sender.take());
+
+        for worker in &mut self.workers {
+            println!("Shutting down worker {}", worker.id);
+
+            if let Some(thread) = worker.job.take() {
+                thread.join().unwrap();
+            }
+        }
     }
 }
 
 struct Worker {
     id: usize,
-    job: thread::JoinHandle<()>,
+    job: Option<thread::JoinHandle<()>>,
 }
 
 impl Worker {
     fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
-        let job = thread::spawn(move || {
+        let thread = thread::spawn(move || {
             loop {
-                let job = receiver.lock().unwrap().recv().unwrap();
-
-                println!("Worker {id} got a job; executing.");
-
-                job();
+                let message = receiver.lock().expect("Failed to acquire resource").recv();
+                
+                match message {
+                    Ok(job) => {
+                        println!("Worker {id} got a job; executing.");
+                        job();
+                    },
+                    Err(_) => {
+                        println!("Worker {id} disconnected.");
+                        break;
+                    }
+                }
             }
         });
 
         Worker { 
             id, 
-            job,
+            job: Some(thread),
         }
     }
 }
