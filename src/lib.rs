@@ -6,8 +6,10 @@ use std::{
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
 #[derive(Debug)]
+/// An error associated to `ThreadPool`.
 pub struct PoolCreationError;
 
+/// A data structure to manage multiple existing threads.
 pub struct ThreadPool {
     workers: Vec<Worker>,
     sender: Option<mpsc::Sender<Job>>,
@@ -40,6 +42,13 @@ impl ThreadPool {
         Ok(ThreadPool { workers, sender })
     }
     
+    /// Send a job to the workers.
+    ///
+    /// `f` is the job to be executed in the form of closure.
+    ///
+    /// # Panics
+    ///
+    /// The method panics if it failed to send the job.
     pub fn execute<F>(&self, f: F) 
         where F: FnOnce() + Send + 'static 
     {
@@ -50,6 +59,7 @@ impl ThreadPool {
 }
 
 impl Drop for ThreadPool {
+    /// Drop the sender and wait the workers to finish their jobs.
     fn drop(&mut self) {
         drop(self.sender.take());
 
