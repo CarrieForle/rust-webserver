@@ -7,7 +7,7 @@ use std::{
     net::{TcpListener, TcpStream},
 };
 
-use WebServer::ThreadPool;
+use webserver::ThreadPool;
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
