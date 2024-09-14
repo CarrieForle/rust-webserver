@@ -1,5 +1,7 @@
 use std::thread;
 
+pub struct PoolCreationError;
+
 pub struct ThreadPool {
     threads: Vec<thread::JoinHandle<()>>,
 }
@@ -12,8 +14,11 @@ impl ThreadPool {
     /// # Panics
     ///
     /// The `new` function will panic if the size is zero.
-    pub fn new(size: usize) -> ThreadPool {
-        assert!(size > 0);
+    pub fn build(size: usize) -> Result<ThreadPool, PoolCreationError> {
+        if size <= 0
+        {
+            return Err(PoolCreationError);
+        }
 
         let mut threads = Vec::with_capacity(size);
 
@@ -21,7 +26,7 @@ impl ThreadPool {
             /* create some threads and store them in the vector */
         }
 
-        ThreadPool { threads }
+        Ok(ThreadPool { threads })
     }
 
     pub fn execute<F>(&self, f: F) 
