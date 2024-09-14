@@ -5,6 +5,7 @@ use std::{
 
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
+#[derive(Debug)]
 pub struct PoolCreationError;
 
 pub struct ThreadPool {

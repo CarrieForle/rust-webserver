@@ -12,12 +12,9 @@ use std::{
 use webserver::ThreadPool;
 
 fn main() {
-    let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+    let listener = TcpListener::bind("127.0.0.1:7878").expect("Failed to bind to \"127.0.0.1:7878\"");
 
-    let pool = match ThreadPool::build(4) {
-        Ok(res) => res,
-        Err(_) => panic!("Failed to initialize a thread pool"),
-    };
+    let pool = ThreadPool::build(4).expect("Failed to initialize a thread pool of 4");
 
     for stream in listener.incoming() {
         let stream = stream.unwrap();
